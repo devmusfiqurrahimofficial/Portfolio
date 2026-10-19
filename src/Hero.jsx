@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react"
 import gsap from "gsap"
 import * as THREE from "three"
-import img from "./IMG_2690.jpeg"
+import img from "./IMG_0713.png"
 
 export function Hero() {
   const heroRef = useRef(null)
