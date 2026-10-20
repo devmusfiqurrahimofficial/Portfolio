@@ -389,7 +389,7 @@ button {
 .portrait-img {
   position: absolute;
   z-index: 1;
-  top: 49%;
+  top: 52%;
   left: 70%;
   width: auto;
   height: min(76%, 680px);
@@ -1157,7 +1157,7 @@ button {
   }
 
   .portrait-img {
-    top: 30%;
+    top: 33%;
     left: 50%;
     height: min(92%, 640px);
     max-width: min(115vw, 520px);
