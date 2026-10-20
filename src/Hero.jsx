@@ -246,17 +246,17 @@ export function Hero({ startAnimation = true }) {
   return (
     <section ref={heroRef} className="hero section-wrap" id="home">
       <div className="hero-kicker">
-        <span className="status-dot" /> AVAILABLE FOR SELECT PROJECTS{" "}
+        <span className="status-dot" /> AVAILABLE FOR FREELANCE WORK
         <span className="hero-location">BASED IN DHAKA, BD</span>
       </div>
 
       <div className="hero-title">
         <div className="line">
-          <span className="line-inner">DIGITAL</span>
+          <span className="line-inner">Musfiqur</span>
         </div>
         <div className="line second-line">
           <span className="line-inner">
-            CRAFT<span className="outline-dot">.</span>
+            Rahim<span className="outline-dot">.</span>
           </span>
         </div>
       </div>
