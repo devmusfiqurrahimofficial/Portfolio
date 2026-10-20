@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ArrowUpRight, Mail, Menu, X } from 'lucide-react'
 import { Hero } from './Hero.jsx'
+import PortfolioSections from './PortfolioSections.jsx'
 gsap.registerPlugin(ScrollTrigger)
 
 const projects = [
@@ -383,6 +384,7 @@ export default function App() {
             </div>
           </div>
         </section>
+        <PortfolioSections/>
       </main>
       <footer className="footer section-wrap reveal">
         <a className="brand" href="#home">
