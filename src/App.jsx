@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { Hero } from './Hero.jsx'
 import { ArrowUpRight, Mail, Menu, X } from 'lucide-react'
-
+import { Hero } from './Hero.jsx'
 gsap.registerPlugin(ScrollTrigger)
 
 const projects = [
@@ -49,59 +48,76 @@ const skills = [
 function Intro({ onFinish }) {
   const [visible, setVisible] = useState(true)
   const overlay = useRef(null)
+  const finish = useCallback(() => {
+    setVisible(false)
+    onFinish()
+  }, [onFinish])
 
   useEffect(() => {
-    if (!visible) {
-      onFinish()
-      return
-    }
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (reduce) {
-      const timeoutId = window.setTimeout(() => setVisible(false), 1600)
-      return () => window.clearTimeout(timeoutId)
+      finish()
+      return
     }
     const ctx = gsap.context(() => {
       const tl = gsap.timeline({
-        onComplete: () => {
-          setVisible(false)
-        },
+        onComplete: finish,
       })
       tl.fromTo(
         '.intro-mark',
-        { scale: 0.2, opacity: 0, rotate: -35 },
-        { scale: 1, opacity: 1, rotate: 0, duration: 0.7, ease: 'back.out(1.8)' }
+        { scale: 0.65, opacity: 0, rotateY: -35, rotateX: 18 },
+        { scale: 1, opacity: 1, rotateY: 0, rotateX: 0, duration: 0.85, ease: 'power3.out' }
       )
-        .fromTo('.intro-line', { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: 'power3.inOut' }, '-=.2')
-        .fromTo('.intro-word', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power3.out' }, '-=.15')
-        .to('.intro-content', { opacity: 0, y: -18, duration: 0.35, delay: 0.35 })
-        .to(overlay.current, { yPercent: -100, duration: 0.8, ease: 'power4.inOut' })
+        .fromTo(
+          '.intro-orbit',
+          { scale: 0.65, opacity: 0, rotate: -35 },
+          { scale: 1, opacity: 1, rotate: 0, duration: 1.1, stagger: 0.12, ease: 'power3.out' },
+          '-=.55'
+        )
+        .fromTo(
+          '.intro-word',
+          { y: 22, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power3.out' },
+          '-=.45'
+        )
+        .fromTo(
+          '.intro-progress-fill',
+          { scaleX: 0 },
+          { scaleX: 1, duration: 0.7, ease: 'power2.inOut' },
+          '-=.3'
+        )
+        .to('.intro-content', { opacity: 0, y: -16, duration: 0.32, delay: 0.25 })
+        .to(overlay.current, { yPercent: -100, duration: 0.75, ease: 'power4.inOut' })
     }, overlay)
     return () => ctx.revert()
-  }, [visible, onFinish])
+  }, [finish])
 
   if (!visible) return null
 
   return (
-    <div className="intro" ref={overlay} aria-label="Portfolio introduction">
+    <div className="intro" ref={overlay} role="status" aria-label="Portfolio introduction">
+      <div className="intro-glow" />
       <div className="intro-content">
-        <div className="intro-mark">
-          mr<span>.</span>
+        <div className="intro-topline">
+          <span>INDEPENDENT DEVELOPER</span>
+          <span>PORTFOLIO — 2026</span>
         </div>
-        <div className="intro-line" />
+        <div className="intro-emblem">
+          <div className="intro-orbit orbit-one" />
+          <div className="intro-orbit orbit-two" />
+          <div className="intro-mark">MR<span>.</span></div>
+        </div>
         <div className="intro-title">
-          <span className="intro-word">DIGITAL</span>
-          <span className="intro-word">CRAFT.</span>
+          <span className="intro-word">THOUGHTFUL DESIGN.</span>
+          <span className="intro-word">BUILT FOR THE WEB.</span>
         </div>
-        <p>AN EXPERIENCE BY MUSFIQUR RAHIM</p>
+        <div className="intro-progress">
+          <div className="intro-progress-fill" />
+        </div>
+        <p className="intro-caption">MUSFIQUR RAHIM <span>·</span> DHAKA, BANGLADESH</p>
       </div>
-      <button
-        className="skip-intro"
-        onClick={() => {
-          setVisible(false)
-          onFinish()
-        }}
-      >
-        SKIP INTRO ↗
+      <button className="skip-intro" onClick={finish}>
+        SKIP <ArrowUpRight size={14} />
       </button>
     </div>
   )
@@ -207,7 +223,7 @@ function ProjectCard({ project }) {
         <div>
           <p className="eyebrow">{project.type}</p>
           <h3>{project.name}</h3>
-        </div>u
+        </div>
         <span className="project-number">{project.n}</span>
       </div>
       <p className="project-desc">{project.desc}</p>
@@ -223,20 +239,24 @@ function ProjectCard({ project }) {
 export default function App() {
   const [introDone, setIntroDone] = useState(false)
   const cursor = useRef(null)
+  const handleIntroFinish = useCallback(() => setIntroDone(true), [])
 
   useEffect(() => {
     if (!introDone) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const ctx = gsap.context(() => {
       gsap.utils.toArray('.reveal').forEach((el) =>
         gsap.fromTo(
           el,
-          { y: 36, opacity: 0 },
+          { y: 32, opacity: 0, rotateX: -5, scale: 0.985, transformPerspective: 1100, transformOrigin: '50% 0%' },
           {
             y: 0,
             opacity: 1,
-            duration: 0.8,
+            rotateX: 0,
+            scale: 1,
+            duration: 0.9,
             ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 86%' },
+            scrollTrigger: { trigger: el, start: 'top 88%', once: true },
           }
         )
       )
@@ -255,7 +275,7 @@ export default function App() {
 
   return (
     <>
-      <Intro onFinish={() => setIntroDone(true)} />
+      <Intro onFinish={handleIntroFinish} />
       <div className="cursor" ref={cursor} />
       <Header />
       <main>
@@ -277,7 +297,9 @@ export default function App() {
           </div>
           <div className="project-grid">
             {projects.map((p) => (
-              <ProjectCard key={p.n} project={p} />
+              <div className="reveal project-reveal" key={p.n}>
+                <ProjectCard project={p} />
+              </div>
             ))}
           </div>
         </section>
@@ -342,7 +364,7 @@ export default function App() {
               <span>GET IN TOUCH ↗</span>
             </a>
           </div>
-          <div className="contact-bottom">
+          <div className="contact-bottom reveal">
             <p>
               HAVE A PROJECT, A QUESTION, OR JUST WANT TO SAY HI?
               <br />
@@ -362,7 +384,7 @@ export default function App() {
           </div>
         </section>
       </main>
-      <footer className="footer section-wrap">
+      <footer className="footer section-wrap reveal">
         <a className="brand" href="#home">
           MR<span>®</span>
         </a>
