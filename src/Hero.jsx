@@ -5,6 +5,7 @@ import img from "./IMG_0713.png"
 export function Hero({ startAnimation = true }) {
   const heroRef = useRef(null)
   const canvasRef = useRef(null)
+  const portraitImageRef = useRef(null)
 
   // GSAP Animations
   useEffect(() => {
@@ -68,8 +69,8 @@ export function Hero({ startAnimation = true }) {
       [0.69, 0.53],
       [0.72, 0.7],
       [0.67, 0.77],
-      [0.65, 1],
-      [0.35, 1],
+      [0.65, 0.78],
+      [0.35, 0.78],
       [0.32, 0.77],
       [0.29, 0.68],
       [0.33, 0.55],
@@ -118,10 +119,12 @@ export function Hero({ startAnimation = true }) {
         sampleCanvas.width,
         sampleCanvas.height
       )
-      const imageHeight = Math.min(canvasHeight, 820, (window.innerWidth * 0.88) / (width / height))
-      const imageWidth = imageHeight * (width / height)
-      const imageLeft = (canvasWidth - imageWidth) / 2
-      const imageTop = (canvasHeight - imageHeight) / 2
+      const heroBounds = hero.getBoundingClientRect()
+      const portraitBounds = portraitImageRef.current.getBoundingClientRect()
+      const imageWidth = portraitBounds.width
+      const imageHeight = portraitBounds.height
+      const imageLeft = portraitBounds.left - heroBounds.left
+      const imageTop = portraitBounds.top - heroBounds.top
       const scale = imageWidth / width
       pixelSize = Math.max(1.8, Math.min(3.2, sampleStep * scale * 1.02))
       const nextParticles = []
@@ -254,7 +257,7 @@ export function Hero({ startAnimation = true }) {
 
       <div className="hero-portrait" aria-label="Portrait of Musfiqur Rahim">
         <canvas ref={canvasRef} className="hero-pixel-canvas" />
-        <img src={img} alt="Musfiqur Rahim" className="portrait-img" />
+        <img ref={portraitImageRef} src={img} alt="Musfiqur Rahim" className="portrait-img" />
       </div>
 
       <div className="hero-bottom">
@@ -280,4 +283,3 @@ export function Hero({ startAnimation = true }) {
     </section>
   )
 }
-

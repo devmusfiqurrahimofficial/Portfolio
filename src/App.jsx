@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { Hero } from './Hero.jsx'
 import { ArrowUpRight, Mail, Menu, X } from 'lucide-react'
+import portrait from './IMG_0713.png'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -69,10 +70,15 @@ function Intro({ onFinish }) {
         },
       })
       tl.fromTo(
-        '.intro-mark',
-        { scale: 0.2, opacity: 0, rotate: -35 },
-        { scale: 1, opacity: 1, rotate: 0, duration: 0.7, ease: 'back.out(1.8)' }
+        '.intro-portrait',
+        { y: 36, opacity: 0 },
+        { y: 0, opacity: 0.72, duration: 0.8, ease: 'power3.out' }
       )
+        .fromTo(
+          '.intro-mark',
+          { scale: 0.2, opacity: 0, rotate: -35 },
+          { scale: 1, opacity: 1, rotate: 0, duration: 0.7, ease: 'back.out(1.8)' }
+        )
         .fromTo('.intro-line', { scaleX: 0 }, { scaleX: 1, duration: 0.55, ease: 'power3.inOut' }, '-=.2')
         .fromTo('.intro-word', { y: 36, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power3.out' }, '-=.15')
         .to('.intro-content', { opacity: 0, y: -18, duration: 0.35, delay: 0.35 })
@@ -85,6 +91,7 @@ function Intro({ onFinish }) {
 
   return (
     <div className="intro" ref={overlay} aria-label="Portfolio introduction">
+      <img className="intro-portrait" src={portrait} alt="" />
       <div className="intro-content">
         <div className="intro-mark">
           mr<span>.</span>
@@ -376,4 +383,3 @@ export default function App() {
     </>
   )
 }
-
