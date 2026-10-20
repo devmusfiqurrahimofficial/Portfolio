@@ -58,9 +58,10 @@ export function Hero({ startAnimation = true }) {
     let particles = []
     let canvasWidth = 0
     let canvasHeight = 0
+    let pixelRatio = 1
     let pixelSize = 2
     let startedAt = 0
-    const sampleStep = 2
+    const sampleStep = 1
     const silhouette = [
       [0.43, 0.32],
       [0.59, 0.32],
@@ -93,12 +94,12 @@ export function Hero({ startAnimation = true }) {
 
     const resizeCanvas = () => {
       const bounds = hero.getBoundingClientRect()
-      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      pixelRatio = Math.min(window.devicePixelRatio || 1, 4)
       canvasWidth = bounds.width
       canvasHeight = bounds.height
-      canvas.width = Math.round(canvasWidth * dpr)
-      canvas.height = Math.round(canvasHeight * dpr)
-      context.setTransform(dpr, 0, 0, dpr, 0, 0)
+      canvas.width = Math.round(canvasWidth * pixelRatio)
+      canvas.height = Math.round(canvasHeight * pixelRatio)
+      context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
     }
 
     const createParticles = () => {
@@ -126,7 +127,7 @@ export function Hero({ startAnimation = true }) {
       const imageLeft = portraitBounds.left - heroBounds.left
       const imageTop = portraitBounds.top - heroBounds.top
       const scale = imageWidth / width
-      pixelSize = Math.max(1.8, Math.min(3.2, sampleStep * scale * 1.02))
+      pixelSize = Math.max(1.25, Math.min(2.2, scale * 1.15))
       const nextParticles = []
 
       for (let y = 0; y < height; y += sampleStep) {
@@ -193,15 +194,20 @@ export function Hero({ startAnimation = true }) {
         const y = particle.y + (particle.targetY - particle.y) * eased
         const opacity = 0.24 + eased * 0.76
         const pulse = progress === 1 ? 0.92 + Math.sin(elapsed * 2 + particle.phase) * 0.08 : 1
-        const size = pixelSize * (0.65 + eased * 0.35)
+        const drawX = Math.round(x * pixelRatio) / pixelRatio
+        const drawY = Math.round(y * pixelRatio) / pixelRatio
+        const size = Math.max(
+          1 / pixelRatio,
+          Math.round(pixelSize * (0.65 + eased * 0.35) * pixelRatio) / pixelRatio
+        )
 
         if (particle.glow) {
           context.globalAlpha = opacity * pulse * 0.55
-          context.drawImage(glow, x - size * 1.4, y - size * 1.4, size * 2.8, size * 2.8)
+          context.drawImage(glow, drawX - size * 1.4, drawY - size * 1.4, size * 2.8, size * 2.8)
         }
         context.globalAlpha = opacity * pulse
         context.fillStyle = particle.color
-        context.fillRect(x - size / 2, y - size / 2, size, size)
+        context.fillRect(drawX - size / 2, drawY - size / 2, size, size)
       }
 
       context.globalAlpha = 1
