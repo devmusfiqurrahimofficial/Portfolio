@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { Hero } from './Hero.jsx'
-import { ArrowUpRight, Github, Linkedin, Mail, Menu, X } from 'lucide-react'
+import { ArrowUpRight, Mail, Menu, X } from 'lucide-react'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -210,7 +210,7 @@ function ProjectCard({ project }) {
         <div>
           <p className="eyebrow">{project.type}</p>
           <h3>{project.name}</h3>
-        </div>
+        </div>u
         <span className="project-number">{project.n}</span>
       </div>
       <p className="project-desc">{project.desc}</p>
@@ -262,7 +262,7 @@ export default function App() {
       <div className="cursor" ref={cursor} />
       <Header />
       <main>
-        <Hero />
+        <Hero startAnimation={introDone} />
 
         <section className="work section-wrap section-pad" id="work">
           <div className="section-heading reveal">
@@ -353,10 +353,10 @@ export default function App() {
             </p>
             <div className="socials">
               <a href="https://github.com/" target="_blank" rel="noreferrer" aria-label="GitHub">
-                <Github />
+                <span aria-hidden="true">GH</span>
               </a>
               <a href="https://linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
-                <Linkedin />
+                <span aria-hidden="true">in</span>
               </a>
               <a href="mailto:hello@example.com" aria-label="Email">
                 <Mail />
@@ -376,3 +376,4 @@ export default function App() {
     </>
   )
 }
+

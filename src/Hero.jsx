@@ -1,9 +1,8 @@
 import { useEffect, useRef } from "react"
 import gsap from "gsap"
-import * as THREE from "three"
 import img from "./IMG_0713.png"
 
-export function Hero() {
+export function Hero({ startAnimation = true }) {
   const heroRef = useRef(null)
   const canvasRef = useRef(null)
 
@@ -40,113 +39,200 @@ export function Hero() {
     return () => ctx.revert()
   }, [])
 
-  // 3D Canvas Scene
   useEffect(() => {
-    if (!canvasRef.current) return
+    if (!startAnimation || !canvasRef.current) return
 
     const canvas = canvasRef.current
-    const scene = new THREE.Scene()
-    
-    const camera = new THREE.PerspectiveCamera(
-      60,
-      canvas.clientWidth / canvas.clientHeight,
-      0.1,
-      1000
-    )
-    camera.position.z = 2.5
-
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: true,
-      antialias: true,
-    })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
-    renderer.setSize(canvas.clientWidth, canvas.clientHeight)
-
-    // Particle Cloud Matrix Creation
-    const particleCount = 1800
-    const geometry = new THREE.BufferGeometry()
-    const positions = new Float32Array(particleCount * 3)
-    const scales = new Float32Array(particleCount)
-
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      positions[i] = (Math.random() - 0.5) * 5
-      positions[i + 1] = (Math.random() - 0.5) * 5
-      positions[i + 2] = (Math.random() - 0.5) * 3
-      scales[i / 3] = Math.random() * 0.02 + 0.005
+    const hero = heroRef.current
+    const context = canvas.getContext("2d")
+    if (!context) {
+      console.error("Unable to create a 2D canvas context for the hero portrait.")
+      hero.classList.add("portrait-fallback")
+      return () => hero.classList.remove("portrait-fallback")
     }
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-
-    const material = new THREE.PointsMaterial({
-      color: 0xc8f169,
-      size: 0.02,
-      transparent: true,
-      opacity: 0.7,
-      blending: THREE.AdditiveBlending,
-    })
-
-    const particles = new THREE.Points(geometry, material)
-    scene.add(particles)
-
-    // Mouse Pointer Interaction
-    let mouseX = 0
-    let mouseY = 0
-    let targetX = 0
-    let targetY = 0
-
-    const handleMouseMove = (e) => {
-      mouseX = (e.clientX / window.innerWidth - 0.5) * 2
-      mouseY = -(e.clientY / window.innerHeight - 0.5) * 2
-    }
-
-    window.addEventListener("pointermove", handleMouseMove)
-
-    // Resize Handler
-    const handleResize = () => {
-      if (!canvasRef.current) return
-      camera.aspect = canvas.clientWidth / canvas.clientHeight
-      camera.updateProjectionMatrix()
-      renderer.setSize(canvas.clientWidth, canvas.clientHeight)
-    }
-
-    window.addEventListener("resize", handleResize)
-
-    // Render Animation Loop
+    const image = new Image()
     let animationFrameId
-    const clock = new THREE.Clock()
+    let disposed = false
+    let particles = []
+    let canvasWidth = 0
+    let canvasHeight = 0
+    let pixelSize = 2
+    let startedAt = 0
+    const sampleStep = 2
+    const silhouette = [
+      [0.43, 0.32],
+      [0.59, 0.32],
+      [0.63, 0.38],
+      [0.66, 0.46],
+      [0.69, 0.53],
+      [0.72, 0.7],
+      [0.67, 0.77],
+      [0.65, 1],
+      [0.35, 1],
+      [0.32, 0.77],
+      [0.29, 0.68],
+      [0.33, 0.55],
+      [0.34, 0.48],
+      [0.39, 0.41],
+    ]
 
-    const animate = () => {
-      const elapsedTime = clock.getElapsedTime()
-
-      targetX += (mouseX - targetX) * 0.05
-      targetY += (mouseY - targetY) * 0.05
-
-      particles.rotation.y = elapsedTime * 0.08 + targetX * 0.5
-      particles.rotation.x = -targetY * 0.5
-
-      const pos = geometry.attributes.position.array
-      for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3
-        pos[i3 + 1] += Math.sin(elapsedTime + pos[i3]) * 0.001
+    const isInsideSilhouette = (x, y) => {
+      let inside = false
+      for (let i = 0, j = silhouette.length - 1; i < silhouette.length; j = i++) {
+        const [xi, yi] = silhouette[i]
+        const [xj, yj] = silhouette[j]
+        const crossesEdge = (yi > y) !== (yj > y)
+        if (crossesEdge && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) {
+          inside = !inside
+        }
       }
-      geometry.attributes.position.needsUpdate = true
+      return inside
+    }
 
-      renderer.render(scene, camera)
+    const resizeCanvas = () => {
+      const bounds = hero.getBoundingClientRect()
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      canvasWidth = bounds.width
+      canvasHeight = bounds.height
+      canvas.width = Math.round(canvasWidth * dpr)
+      canvas.height = Math.round(canvasHeight * dpr)
+      context.setTransform(dpr, 0, 0, dpr, 0, 0)
+    }
+
+    const createParticles = () => {
+      const sampleCanvas = document.createElement("canvas")
+      sampleCanvas.width = image.naturalWidth
+      sampleCanvas.height = image.naturalHeight
+      const sampleContext = sampleCanvas.getContext("2d", { willReadFrequently: true })
+      if (!sampleContext) {
+        console.error("Unable to sample the hero portrait image.")
+        hero.classList.add("portrait-fallback")
+        return
+      }
+
+      sampleContext.drawImage(image, 0, 0)
+      const { data, width, height } = sampleContext.getImageData(
+        0,
+        0,
+        sampleCanvas.width,
+        sampleCanvas.height
+      )
+      const imageHeight = Math.min(canvasHeight, 820, (window.innerWidth * 0.88) / (width / height))
+      const imageWidth = imageHeight * (width / height)
+      const imageLeft = (canvasWidth - imageWidth) / 2
+      const imageTop = (canvasHeight - imageHeight) / 2
+      const scale = imageWidth / width
+      pixelSize = Math.max(1.8, Math.min(3.2, sampleStep * scale * 1.02))
+      const nextParticles = []
+
+      for (let y = 0; y < height; y += sampleStep) {
+        for (let x = 0; x < width; x += sampleStep) {
+          const normalizedX = x / width
+          const normalizedY = y / height
+          if (!isInsideSilhouette(normalizedX, normalizedY)) continue
+
+          const index = (y * width + x) * 4
+          const alpha = data[index + 3] / 255
+          const luminance =
+            (data[index] * 0.2126 + data[index + 1] * 0.7152 + data[index + 2] * 0.0722) *
+            alpha
+          if (alpha < 0.1 || luminance < 12) continue
+
+          const red = Math.min(255, Math.round(data[index] * 0.68 + 20))
+          const green = Math.min(255, Math.round(data[index + 1] * 0.68 + 45))
+          const blue = Math.min(255, Math.round(data[index + 2] * 0.68 + 78))
+          const targetX = imageLeft + (x + sampleStep / 2) * scale
+          const targetY = imageTop + (y + sampleStep / 2) * scale
+          const spread = imageWidth * 0.72
+
+          nextParticles.push({
+            x: targetX + (Math.random() - 0.5) * spread,
+            y: targetY + (Math.random() - 0.5) * spread,
+            targetX,
+            targetY,
+            color: `rgb(${red}, ${green}, ${blue})`,
+            glow: Math.random() < 0.14,
+            delay: Math.random() * 1.15,
+            duration: 1.05 + Math.random() * 0.7,
+            phase: Math.random() * Math.PI * 2,
+          })
+        }
+      }
+
+      particles = nextParticles
+      startedAt = performance.now()
+    }
+
+    const glow = document.createElement("canvas")
+    glow.width = 24
+    glow.height = 24
+    const glowContext = glow.getContext("2d")
+    if (glowContext) {
+      const gradient = glowContext.createRadialGradient(12, 12, 0, 12, 12, 12)
+      gradient.addColorStop(0, "rgba(82, 220, 255, 0.42)")
+      gradient.addColorStop(1, "rgba(82, 220, 255, 0)")
+      glowContext.fillStyle = gradient
+      glowContext.fillRect(0, 0, 24, 24)
+    }
+
+    const animate = (now) => {
+      context.clearRect(0, 0, canvasWidth, canvasHeight)
+      const elapsed = (now - startedAt) / 1000
+
+      for (const particle of particles) {
+        const progress = Math.max(
+          0,
+          Math.min(1, (elapsed - particle.delay) / particle.duration)
+        )
+        const eased = 1 - (1 - progress) ** 3
+        const x = particle.x + (particle.targetX - particle.x) * eased
+        const y = particle.y + (particle.targetY - particle.y) * eased
+        const opacity = 0.24 + eased * 0.76
+        const pulse = progress === 1 ? 0.92 + Math.sin(elapsed * 2 + particle.phase) * 0.08 : 1
+        const size = pixelSize * (0.65 + eased * 0.35)
+
+        if (particle.glow) {
+          context.globalAlpha = opacity * pulse * 0.55
+          context.drawImage(glow, x - size * 1.4, y - size * 1.4, size * 2.8, size * 2.8)
+        }
+        context.globalAlpha = opacity * pulse
+        context.fillStyle = particle.color
+        context.fillRect(x - size / 2, y - size / 2, size, size)
+      }
+
+      context.globalAlpha = 1
       animationFrameId = requestAnimationFrame(animate)
     }
 
-    animate()
+    const handleResize = () => {
+      resizeCanvas()
+      if (image.complete && image.naturalWidth) createParticles()
+    }
+
+    resizeCanvas()
+    window.addEventListener("resize", handleResize)
+    image.onload = () => {
+      if (disposed) return
+      createParticles()
+      animationFrameId = requestAnimationFrame(animate)
+    }
+    image.onerror = () => {
+      if (disposed) return
+      console.error("Unable to load the hero portrait image.")
+      hero.classList.add("portrait-fallback")
+    }
+    image.src = img
 
     return () => {
       cancelAnimationFrame(animationFrameId)
-      window.removeEventListener("pointermove", handleMouseMove)
       window.removeEventListener("resize", handleResize)
-      geometry.dispose()
-      material.dispose()
-      renderer.dispose()
+      image.onload = null
+      image.onerror = null
+      disposed = true
+      hero.classList.remove("portrait-fallback")
     }
-  }, [])
+  }, [startAnimation])
 
   return (
     <section ref={heroRef} className="hero section-wrap" id="home">
@@ -167,16 +253,8 @@ export function Hero() {
       </div>
 
       <div className="hero-portrait" aria-label="Portrait of Musfiqur Rahim">
-        <canvas ref={canvasRef} className="hero-3d-canvas" />
-        <div className="portrait-glow" />
-        <div className="portrait-grid" />
+        <canvas ref={canvasRef} className="hero-pixel-canvas" />
         <img src={img} alt="Musfiqur Rahim" className="portrait-img" />
-        <div className="portrait-label">
-          <span>FIG. 001</span>
-          <span>HUMAN × DIGITAL</span>
-        </div>
-        <div className="portrait-cross cross-one">+</div>
-        <div className="portrait-cross cross-two">+</div>
       </div>
 
       <div className="hero-bottom">
@@ -202,3 +280,4 @@ export function Hero() {
     </section>
   )
 }
+
